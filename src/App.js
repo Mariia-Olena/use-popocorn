@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import StarRating from './StarRating';
 
 const average = (arr) => arr.reduce((acc, cur) => acc + cur / arr.length, 0);
@@ -128,12 +128,12 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
   const [isLoading, setIsLoading] = useState(false);
   const [userRating, setUserRating] = useState(null);
 
-  const isWatched = watched.map((movie) => movie.imdbID).includes(selectedId);
+  const countRef = useRef(0);
 
+  const isWatched = watched.map((movie) => movie.imdbID).includes(selectedId);
   const watchedUserRating = watched.find(
     (movie) => movie.imdbID === selectedId
   )?.userRating;
-
   const {
     imdbRating,
     Title: title,
@@ -146,6 +146,10 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
     Director: director,
     Genre: genre,
   } = movie;
+
+  useEffect(() => {
+    userRating && countRef.current++;
+  }, [userRating]);
 
   useEffect(
     function () {
@@ -202,6 +206,7 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
       year,
       poster,
       userRating,
+      countRatingDecisions: countRef.current,
     };
 
     onAddWatched(newWatchedMovie);
@@ -287,6 +292,27 @@ function Logo() {
 }
 
 function Search({ query, setQuery }) {
+  const inputElem = useRef(null);
+
+  useEffect(() => {
+    inputElem.current.focus();
+  }, []);
+
+  useEffect(() => {
+    function callback(e) {
+      if (document.activeElement === inputElem.current) return;
+
+      if (e.code === 'Enter') {
+        inputElem.current.focus();
+        setQuery('');
+      }
+    }
+
+    document.addEventListener('keydown', callback);
+
+    return () => document.removeEventListener('keydown', callback);
+  }, [setQuery]);
+
   return (
     <input
       className="search"
@@ -294,6 +320,7 @@ function Search({ query, setQuery }) {
       placeholder="Search movies..."
       value={query}
       onChange={(e) => setQuery(e.target.value)}
+      ref={inputElem}
     />
   );
 }
